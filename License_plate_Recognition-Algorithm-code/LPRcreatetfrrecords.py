@@ -25,7 +25,7 @@ def _bytes_feature(value):
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-writer = tf.python_io.TFRecordWriter("zh_character.tfrecords")
+writer = tf.python_io.TFRecordWriter("zh_character_hw.tfrecords")
 
 original_images = []
 
@@ -36,6 +36,10 @@ for imgIndex in range(len(imgSaveList)):
         
         #存储标签
         label = imgIndex
+
+        #存储高和宽
+        height = x_img.shape[0]
+        width = x_img.shape[1]
 
         original_images.append((x_img, label))
         
