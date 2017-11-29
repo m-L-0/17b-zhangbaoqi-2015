@@ -14,7 +14,7 @@ for pathName in pathlist:
     for imgPathName in os.listdir(rodir+pathName):
         img = Image.open(rodir+pathName+'/'+imgPathName)
         imgNparr = np.array(img)
-        imgSaveList.append(imgNparr)
+        imgSaveList[ind].append(imgNparr[:,:,1])
     ind += 1
 
 #转换存储类型为bytes
@@ -25,31 +25,24 @@ def _bytes_feature(value):
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-writer = tf.python_io.TFRecordWriter("zh_character_hw.tfrecords")
-
-original_images = []
+writer = tf.python_io.TFRecordWriter("zh_character_test.tfrecords")
 
 for imgIndex in range(len(imgSaveList)):
     for x_img in imgSaveList[imgIndex]:
         #将图像转化为二进制形式
-        img_raw = x_img.tobytes()
-        
+        img_raw = x_img.tobytes() 
         #存储标签
         label = imgIndex
-
         #存储高和宽
         height = x_img.shape[0]
-        width = x_img.shape[1]
-
-        original_images.append((x_img, label))
         
         #tfrecords文件存储特征值
         example = tf.train.Example(features=tf.train.Features(feature={
             'label': _int64_feature(label),
+            'height': _int64_feature(height),
             'image_raw': _bytes_feature(img_raw)
         }))
-        
         writer.write(example.SerializeToString())
+    print(imgIndex)
 print("create tfrecords file successful!")
-
 writer.close()
