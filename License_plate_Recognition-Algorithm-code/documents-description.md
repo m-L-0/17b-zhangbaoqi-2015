@@ -3,11 +3,13 @@
 **柱状图(直方图)统计各省的样本数量**
 
 <img src="./images/histgram.png" alt="直方图">
-<img src="./images/histgramtest.png" alt="直方图">
+**测试集**
+<img src="./images/hisgramtest.png" alt="直方图">
 
 **饼状图统计各省所占比例**
 
 <img src="./images/piechart.png" alt="饼状图">
+**测试集**
 <img src="./images/piecharttest.png" alt="饼状图">
 
 训练集和验证集比例：70%， 30%
