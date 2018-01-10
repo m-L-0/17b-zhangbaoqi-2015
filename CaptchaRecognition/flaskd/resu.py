@@ -1,6 +1,5 @@
 import tensorflow as tf 
 import numpy as np
-import matplotlib.pyplot as plt
 import math
 from PIL import Image
 
@@ -9,7 +8,6 @@ def cnnmain(img):
     numSam = 1
     imgshape=1600
     outlen=4
-    fm = 100
 
     labelsDict = {k:v for k,v in zip(range(10),range(10))}
     labelsDict[10] = ' '
@@ -41,6 +39,7 @@ def cnnmain(img):
     #最大池化
     def maxPool2x2(x):
         return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
 
     # 卷积
     def cnn(imgshape, switch=False, sess=tf.Session()):
@@ -76,12 +75,18 @@ def cnnmain(img):
         hfc1drop = tf.nn.dropout(hfc1, keep_prob)
 
         #output layer
-        Wfc2 = [weight_var([1024, 11]) for i in range(4)]
-        bfc2 = [bias_var([11]) for i in range(4)]
+        with tf.name_scope('weight'):
+            Wfc2 = [weight_var([1024, 11]) for i in range(4)]
+        # tf.histogram_summary("weights",Wfc2)
+        with tf.name_scope('bias'):
+            bfc2 = [bias_var([11]) for i in range(4)]
 
+        # y_conv = tf.nn.softmax(tf.matmul(hfc1drop, Wfc2) + bfc2)
         y_conv = [tf.nn.softmax(tf.matmul(hfc1drop, Wfc2[i]) + bfc2[i]) for i in range(4)]
 
-        yRelabel = [tf.slice(y_labels, [0,n,0], [numSam,1,11]) for n in range(4)] 
+        # yReshape = [tf.slice(y_conv, [0,n,0], [4,1,11]) for n in range(numSam)] # 2指的是batch，n指的是
+        # y_copy = tf.reshape(yReshape, [numSam,4,11])
+        yRelabel = [tf.slice(y_labels, [0,n,0], [numSam,1,11]) for n in range(4)] # 2指的是batch，n指的是
         y_cola = tf.reshape(yRelabel, [4,numSam,11])
 
         #交叉熵
@@ -92,17 +97,13 @@ def cnnmain(img):
 
         #准确度计算
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        tf.summary.scalar('accuracy', accuracy)
 
         sumCro = tf.reduce_mean(cross_entropy)
+        tf.summary.scalar('loss', sumCro)
         #梯度下降
         train_step = tf.train.AdamOptimizer().minimize(sumCro)
 
-        saver = tf.train.Saver() 
-        # 保存模型
-        if switch:
-            # 读取并使用模型
-            ckpt = tf.train.get_checkpoint_state('./model')
-            saver.restore(sess, ckpt.model_checkpoint_path)
         # 模型保存
         EigEm = {
             'x':x,
@@ -115,10 +116,8 @@ def cnnmain(img):
             'train_step':train_step,
         }
         return EigEm
-
     EigEm1 = cnn(imgshape=1600)
     saver = tf.train.Saver()
-
     with tf.Session() as sess:
         sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
         coord = tf.train.Coordinator()
@@ -128,7 +127,6 @@ def cnnmain(img):
         ckpt = tf.train.get_checkpoint_state('./model')
         saver.restore(sess, ckpt.model_checkpoint_path)
 
-        img = img / 255
         outlayer = sess.run(tf.argmax(EigEm1['y_conv'], 2), feed_dict={EigEm1['x']: img, EigEm1['keep_prob']: 1.0})
         outStr = ''
         for elem in outlayer:
